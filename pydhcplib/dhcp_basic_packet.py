@@ -1,5 +1,5 @@
 # pydhcplib
-# Copyright (C) 2013 Mathieu Ignacio -- mignacio@april.org
+# Copyright (C) 2008 Mathieu Ignacio -- mignacio@april.org
 #
 # This file is part of pydhcplib.
 # Pydhcplib is free software; you can redistribute it and/or modify
@@ -133,11 +133,20 @@ class DhcpBasicPacket:
             order[DhcpOptions[each]].append(DhcpOptions[each])
             order[DhcpOptions[each]].append(len(self.options_data[each]))
             order[DhcpOptions[each]] += self.options_data[each]
-            
+        
+        # print order    
         options = []
-
+        
+        # if 60 in order.keys():
+        #     print 'Found BSDP packet, special sort'
+        #     for each in [53,54,60,17,43,52]:
+        #         if each in order:
+        #             options += (order[each])
+        # else:
+        #     print 'Not a BSDP packet, regular sort'
+        #     for each in sorted(order.keys()) : options += (order[each])
         for each in sorted(order.keys()) : options += (order[each])
-
+        
         packet = self.packet_data[:240] + options
         packet.append(255) # add end option
         pack_fmt = str(len(packet))+"c"
