@@ -19,44 +19,36 @@ import sys
 import socket
 import select
 import dhcp_packet
-import interface
-import struct
-import _rawsocket
-import type_ipv4
 import IN
 
 class DhcpNetwork:
-    def __init__(self, ifname, listen_address="0.0.0.0", listen_port=67, emit_port=68):
-        netifo = interface.interface()
-        self.ifname         = ifname
-        self.listen_port    = int(listen_port)
-        self.emit_port      = int(emit_port)
+    def __init__(self, listen_address="0.0.0.0", listen_port=67, emit_port=68):
+
+        self.listen_port = int(listen_port)
+        self.emit_port = int(emit_port)
         self.listen_address = listen_address
-        self.so_reuseaddr   = False
-        self.so_broadcast   = True
-        self.dhcp_socket    = None
+        self.so_reuseaddr = False
+        self.so_broadcast = True
+        self.dhcp_socket = None
         
     # Networking stuff
-    def CreateSocket(self, so_broadcast, so_reuseaddr) :
-        dhcp_socket = None
+    def CreateSocket(self) :
         try :
-            dhcp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            self.dhcp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         except socket.error, msg :
             sys.stderr.write('pydhcplib.DhcpNetwork socket creation error : '+str(msg))
 
         try :
-            if so_broadcast :
-                dhcp_socket.setsockopt(socket.SOL_SOCKET,socket.SO_BROADCAST,1)
+            if self.so_broadcast :
+                self.dhcp_socket.setsockopt(socket.SOL_SOCKET,socket.SO_BROADCAST,1)
         except socket.error, msg :
             sys.stderr.write('pydhcplib.DhcpNetwork socket error in setsockopt SO_BROADCAST : '+str(msg))
 
         try : 
-            if so_reuseaddr :
-                dhcp_socket.setsockopt(socket.SOL_SOCKET,socket.SO_REUSEADDR,1)
+            if self.so_reuseaddr :
+                self.dhcp_socket.setsockopt(socket.SOL_SOCKET,socket.SO_REUSEADDR,1)
         except socket.error, msg :
             sys.stderr.write('pydhcplib.DhcpNetwork socket error in setsockopt SO_REUSEADDR : '+str(msg))
-
-        return dhcp_socket
         
     def EnableReuseaddr(self) :
         self.so_reuseaddr = True
@@ -72,7 +64,7 @@ class DhcpNetwork:
 
     def BindToDevice(self) :
         try :
-            self.dhcp_socket.setsockopt(socket.SOL_SOCKET,IN.SO_BINDTODEVICE,self.ifname)
+            self.dhcp_socket.setsockopt(socket.SOL_SOCKET,IN.SO_BINDTODEVICE,self.listen_address+'\0')
         except socket.error, msg :
             sys.stderr.write ('pydhcplib.DhcpNetwork.BindToDevice error in setsockopt SO_BINDTODEVICE : '+str(msg))
 
@@ -126,35 +118,7 @@ class DhcpNetwork:
 
                 return packet
 
-    def SendDhcpPacket(self, request, response):
-        giaddr = ".".join(map(str, request.GetOption("giaddr")))
-        ciaddr = ".".join(map(str, request.GetOption("ciaddr")))
-        yiaddr = ".".join(map(str, response.GetOption("yiaddr")))
-        chaddr = struct.pack(6*"B", *request.GetOption("chaddr")[0:6])
-        broadcast = request.GetOption("flags")[0] != 0
-
-        if (giaddr != "0.0.0.0"):
-            self.SendDhcpPacketTo(response, giaddr, self.listen_port)
-        elif (response.IsDhcpNackPacket()):
-            self.SendDhcpPacketTo(response, "255.255.255.255", self.emit_port)
-        elif (ciaddr != "0.0.0.0"):
-            self.SendDhcpPacketTo(response, ciaddr, self.emit_port)
-        elif (broadcast):
-            self.SendDhcpPacketTo(response, "255.255.255.255", self.emit_port)
-        else: # unicast to yiaddr
-            ifconfig = interface.interface()
-            ifindex  = ifconfig.getIndex(self.ifname)
-            ifaddr   = ifconfig.getAddr(self.ifname)
-            _rawsocket.udp_send_packet( response.EncodePacket(),
-                                        type_ipv4.ipv4(ifaddr).int(),
-                                        self.listen_port,
-                                        type_ipv4.ipv4(yiaddr).int(),
-                                        self.emit_port,
-                                        chaddr,
-                                        ifindex
-                                      )
-
-    def SendDhcpPacketTo(self, packet, _ip, _port):
+    def SendDhcpPacketTo(self, packet, _ip,_port):
         return self.dhcp_socket.sendto(packet.EncodePacket(),(_ip,_port))
 
     # Server side Handle methods
@@ -194,31 +158,31 @@ class DhcpNetwork:
 
 
 class DhcpServer(DhcpNetwork) :
-    def __init__(self, ifname,listen_address="0.0.0.0",client_listen_port=68,server_listen_port=67) :
+    def __init__(self, listen_address="0.0.0.0", client_listen_port=68,server_listen_port=67) :
         
-        DhcpNetwork.__init__(self,ifname,listen_address,server_listen_port,client_listen_port)
+        DhcpNetwork.__init__(self,listen_address,server_listen_port,client_listen_port)
 
         self.EnableBroadcast()
         self.DisableReuseaddr()
 
-        self.dhcp_socket = self.CreateSocket(self.so_broadcast, self.so_reuseaddr)
+        self.CreateSocket()
         self.BindToAddress()
 
 class DhcpClient(DhcpNetwork) :
     def __init__(self, listen_address="0.0.0.0", client_listen_port=68,server_listen_port=67) :
         
-        DhcpNetwork.__init__(self,None,listen_address,client_listen_port,server_listen_port)
+        DhcpNetwork.__init__(self,listen_address,client_listen_port,server_listen_port)
 
         self.EnableBroadcast()
         self.EnableReuseaddr()
 
-        self.dhcp_socket = self.CreateSocket(self.so_broadcast, self.so_reuseaddr)
+        self.CreateSocket()
 
 
 class DhcpClientOld(DhcpNetwork) :
     def __init__(self, listen_address="0.0.0.0",client_listen_port=68,server_listen_port=67) :
 
-        DhcpNetwork.__init__(self,None,listen_address,client_listen_port,server_listen_port)
+        DhcpNetwork.__init__(self,listen_address,client_listen_port,server_listen_port)
 
         try :
             self.dhcp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -234,7 +198,7 @@ class DhcpClientOld(DhcpNetwork) :
 
     def BindToDevice(self) :
         try :
-            self.dhcp_socket.setsockopt(socket.SOL_SOCKET,IN.SO_BINDTODEVICE,self.ifname)
+            self.dhcp_socket.setsockopt(socket.SOL_SOCKET,IN.SO_BINDTODEVICE,self.listen_address+'\0')
         except socket.error, msg :
             sys.stderr.write( 'pydhcplib.DhcpClient socket error in setsockopt SO_BINDTODEVICE : '+str(msg))
 
@@ -253,9 +217,9 @@ class DhcpClientOld(DhcpNetwork) :
 
 
 class DhcpServerOld(DhcpNetwork) :
-    def __init__(self, ifname, listen_address="0.0.0.0", client_listen_port=68,server_listen_port=67) :
+    def __init__(self, listen_address="0.0.0.0", client_listen_port=68,server_listen_port=67) :
         
-        DhcpNetwork.__init__(self,ifname,listen_address,server_listen_port,client_listen_port)
+        DhcpNetwork.__init__(self,listen_address,server_listen_port,client_listen_port)
         
         try :
             self.dhcp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)

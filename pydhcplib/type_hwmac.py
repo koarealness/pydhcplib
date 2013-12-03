@@ -25,11 +25,13 @@ class hwmac:
         self._hw_string = ""
         hw_type = type(value)
         if hw_type == str :
+            print 'Working with string MAC'
             value = value.strip()
             self._hw_string = value
             self._StringToNumlist(value)
             self._CheckNumList()
         elif hw_type == list :
+            print 'Working with list MAC'
             self._hw_numlist = value
             self._CheckNumList()
             self._NumlistToString()

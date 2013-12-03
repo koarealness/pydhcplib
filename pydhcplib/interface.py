@@ -22,18 +22,17 @@ class interface:
 
     # From <bits/ioctls.h>
 
-    SIOCGIFADDR    = 0x8915    # get PA address
-    SIOCGIFBRDADDR = 0x8919    # get broadcast PA address
-    SIOCGIFCONF    = 0x8912    # get iface list
-    SIOCGIFFLAGS   = 0x8913    # get flags
-    SIOCGIFMTU     = 0x8921    # get MTU size
-    SIOCGIFNETMASK = 0x891b    # get network PA mask
-    SIOCSIFADDR    = 0x8916    # set PA address
-    SIOCSIFBRDADDR = 0x891a    # set broadcast PA address
-    SIOCSIFFLAGS   = 0x8914    # set flags
-    SIOCSIFMTU     = 0x8922    # set MTU size
-    SIOCSIFNETMASK = 0x891c    # set network PA mask
-    SIOCGIFINDEX   = 0x8933    # if_index mapping
+    SIOCGIFADDR = 0x8915        # get PA address
+    SIOCGIFBRDADDR  = 0x8919    # get broadcast PA address
+    SIOCGIFCONF = 0x8912        # get iface list
+    SIOCGIFFLAGS = 0x8913       # get flags
+    SIOCGIFMTU = 0x8921         # get MTU size
+    SIOCGIFNETMASK  = 0x891b    # get network PA mask
+    SIOCSIFADDR = 0x8916        # set PA address
+    SIOCSIFBRDADDR  = 0x891a    # set broadcast PA address
+    SIOCSIFFLAGS = 0x8914       # set flags
+    SIOCSIFMTU = 0x8922         # set MTU size
+    SIOCSIFNETMASK  = 0x891c    # set network PA mask
 
     # From <net/if.h>    
 
@@ -103,12 +102,6 @@ class interface:
         """ Get the netmask for an interface """
         result = self._call(ifname, self.SIOCGIFNETMASK)
         return socket.inet_ntoa(result[20:24])
-
-    def getIndex(self, ifname):
-        """ Get the ifindex for an interface """
-        data = self._call(ifname, self.SIOCGIFINDEX)
-        index = struct.unpack("16si12x", data)[1]
-        return index
 
     def getBroadcast(self, ifname):
         """ Get the broadcast addr for an interface """
