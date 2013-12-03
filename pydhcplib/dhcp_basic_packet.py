@@ -1,5 +1,5 @@
 # pydhcplib
-# Copyright (C) 2008 Mathieu Ignacio -- mignacio@april.org
+# Copyright (C) 2013 Mathieu Ignacio -- mignacio@april.org
 #
 # This file is part of pydhcplib.
 # Pydhcplib is free software; you can redistribute it and/or modify
