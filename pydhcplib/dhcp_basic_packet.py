@@ -134,16 +134,16 @@ class DhcpBasicPacket:
             order[DhcpOptions[each]].append(len(self.options_data[each]))
             order[DhcpOptions[each]] += self.options_data[each]
         
-        # print order    
+        # print(order    )
         options = []
         
         # if 60 in order.keys():
-        #     print 'Found BSDP packet, special sort'
+        #     print("Found BSDP packet, special sort")
         #     for each in [53,54,60,17,43,52]:
         #         if each in order:
         #             options += (order[each])
         # else:
-        #     print 'Not a BSDP packet, regular sort'
+        #     print("Not a BSDP packet, regular sort")
         #     for each in sorted(order.keys()) : options += (order[each])
         for each in sorted(order.keys()) : options += (order[each])
         
